@@ -1,0 +1,21 @@
+# Go
+*.exe
+*.test
+*.out
+vendor/
+
+# Env files
+.env
+*.env
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Build artifacts
+bin/
+dist/
