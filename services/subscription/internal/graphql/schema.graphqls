@@ -1,0 +1,115 @@
+scalar Time
+scalar UUID
+
+enum Role {
+  ADMIN
+  CUSTOMER
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  PAUSED
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  FAILED
+  VOID
+}
+
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+}
+
+type Customer {
+  id: UUID!
+  email: String!
+  fullName: String!
+  role: Role!
+  createdAt: Time!
+}
+
+type Plan {
+  id: UUID!
+  name: String!
+  priceCents: Int!
+  currency: String!
+  billingInterval: BillingInterval!
+  isActive: Boolean!
+}
+
+type Subscription {
+  id: UUID!
+  customer: Customer!
+  plan: Plan!
+  status: SubscriptionStatus!
+  currentPeriodStart: Time!
+  currentPeriodEnd: Time!
+  canceledAt: Time
+}
+
+type Invoice {
+  id: UUID!
+  subscription: Subscription!
+  amountCents: Int!
+  currency: String!
+  status: InvoiceStatus!
+  dueDate: Time!
+  paidAt: Time
+}
+
+type AuthPayload {
+  accessToken: String!
+  refreshToken: String!
+  customer: Customer!
+}
+
+input SignupInput {
+  email: String!
+  fullName: String!
+  password: String!
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+input CreatePlanInput {
+  name: String!
+  priceCents: Int!
+  currency: String!
+  billingInterval: BillingInterval!
+}
+
+input CreateSubscriptionInput {
+  planId: UUID!
+}
+
+type Query {
+  me: Customer!
+  plans: [Plan!]!
+  mySubscriptions: [Subscription!]!
+  myInvoices: [Invoice!]!
+  subscription(id: UUID!): Subscription!
+
+  # Admin-only
+  allCustomers(limit: Int = 20, offset: Int = 0): [Customer!]!
+  customerInvoices(customerId: UUID!): [Invoice!]!
+}
+
+type Mutation {
+  signup(input: SignupInput!): AuthPayload!
+  login(input: LoginInput!): AuthPayload!
+
+  createSubscription(input: CreateSubscriptionInput!): Subscription!
+  cancelSubscription(id: UUID!): Subscription!
+
+  # Admin-only
+  createPlan(input: CreatePlanInput!): Plan!
+  deactivatePlan(id: UUID!): Plan!
+}
