@@ -19,3 +19,6 @@ vendor/
 # Build artifacts
 bin/
 dist/
+
+
+docker-compose.yml

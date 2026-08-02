@@ -42,7 +42,7 @@ type Plan {
   isActive: Boolean!
 }
 
-type Subscription {
+type UserSubscription  {
   id: UUID!
   customer: Customer!
   plan: Plan!
@@ -54,7 +54,7 @@ type Subscription {
 
 type Invoice {
   id: UUID!
-  subscription: Subscription!
+  subscription: UserSubscription!
   amountCents: Int!
   currency: String!
   status: InvoiceStatus!
@@ -93,9 +93,9 @@ input CreateSubscriptionInput {
 type Query {
   me: Customer!
   plans: [Plan!]!
-  mySubscriptions: [Subscription!]!
+  mySubscriptions: [UserSubscription!]!
   myInvoices: [Invoice!]!
-  subscription(id: UUID!): Subscription!
+  subscription(id: UUID!): UserSubscription!
 
   # Admin-only
   allCustomers(limit: Int = 20, offset: Int = 0): [Customer!]!
@@ -106,8 +106,8 @@ type Mutation {
   signup(input: SignupInput!): AuthPayload!
   login(input: LoginInput!): AuthPayload!
 
-  createSubscription(input: CreateSubscriptionInput!): Subscription!
-  cancelSubscription(id: UUID!): Subscription!
+  createSubscription(input: CreateSubscriptionInput!): UserSubscription!
+  cancelSubscription(id: UUID!): UserSubscription!
 
   # Admin-only
   createPlan(input: CreatePlanInput!): Plan!

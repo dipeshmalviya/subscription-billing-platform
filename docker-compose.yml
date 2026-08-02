@@ -4,15 +4,15 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: billing
-      POSTGRES_PASSWORD: billing
+      POSTGRES_USER: malvi
+      POSTGRES_PASSWORD: 23Nov2004
       POSTGRES_MULTIPLE_DATABASES: subscription_db,payment_db
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U billing"]
+      test: ["CMD-SHELL", "pg_isready -U malvi"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -67,11 +67,11 @@ services:
       - "8080:8080"
     environment:
       PORT: 8080
-      POSTGRES_URI: postgres://billing:billing@postgres:5432/subscription_db?sslmode=disable
+      POSTGRES_URI: postgres://malvi:23Nov2004@postgres:5432/subscription_db?sslmode=disable
       REDIS_ADDR: redis:6379
       KAFKA_BROKERS: kafka:9092
-      SECRET_KEY: dev_secret_key_change_me
-      SECRET_REFRESH_KEY: dev_refresh_secret_change_me
+      SECRET_KEY: +YPqkUHs4G3DXUYKep5cVibZQvYyCtU1kBY/L29WsMQ=
+      SECRET_REFRESH_KEY: o4LojczaKQS15LINq7oDnpN7ui
       ALLOWED_ORIGINS: http://localhost:5173
       PAYMENT_SERVICE_ADDR: payment-service:9090
     depends_on:

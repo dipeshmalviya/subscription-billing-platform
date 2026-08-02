@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package payment.v1;
+
+option go_package = "github.com/dipeshmalviya/subscription-billing-platform/gen/go/payment/v1;paymentv1";
+
+import "google/protobuf/timestamp.proto";
+
+service PaymentService {
+  rpc ChargeCustomer(ChargeCustomerRequest) returns (ChargeCustomerResponse);
+  rpc GetPaymentStatus(GetPaymentStatusRequest) returns (GetPaymentStatusResponse);
+  rpc RefundPayment(RefundPaymentRequest) returns (RefundPaymentResponse);
+}
+
+enum PaymentStatus {
+  PAYMENT_STATUS_UNSPECIFIED = 0;
+  PAYMENT_STATUS_PENDING = 1;
+  PAYMENT_STATUS_SUCCEEDED = 2;
+  PAYMENT_STATUS_FAILED = 3;
+  PAYMENT_STATUS_REFUNDED = 4;
+}
+
+message ChargeCustomerRequest {
+  string invoice_id = 1;
+  string customer_id = 2;
+  int64 amount_cents = 3;
+  string currency = 4;
+  string idempotency_key = 5;
+}
+
+message ChargeCustomerResponse {
+  string payment_id = 1;
+  PaymentStatus status = 2;
+  string provider_ref = 3;
+  string failure_reason = 4;
+  google.protobuf.Timestamp processed_at = 5;
+}
+
+message GetPaymentStatusRequest {
+  string invoice_id = 1;
+}
+
+message GetPaymentStatusResponse {
+  string payment_id = 1;
+  PaymentStatus status = 2;
+  int32 attempt_count = 3;
+  google.protobuf.Timestamp updated_at = 4;
+}
+
+message RefundPaymentRequest {
+  string payment_id = 1;
+  string reason = 2;
+}
+
+message RefundPaymentResponse {
+  string payment_id = 1;
+  PaymentStatus status = 2;
+  google.protobuf.Timestamp refunded_at = 3;
+}
