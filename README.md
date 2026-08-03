@@ -1,45 +1,71 @@
 # Subscription Billing Platform
 
-A modular billing platform built as a Go microservices sample project.
+## Objective
 
-## Architecture
+Build a production-inspired Subscription Billing System using Go microservices.
 
-This repository includes three main services:
+## What this project delivers
+
+- **GraphQL API** for customer, subscription, invoice, and billing management.
+- **Subscription Service** and **Payment Service** communicating via gRPC.
+- **PostgreSQL** persistence with normalized schema, transactions, and worker support.
+- **Redis** caching for plans and customer summaries.
+- **Kafka** event publishing with a Notification Service consumer.
+- **JWT authentication** and role-based authorization for Admin and Customer flows.
+- **Background workers** for subscription renewals and payment retries.
+- **Structured logging**, health checks, and Prometheus metrics.
+- **Docker Compose** for local development and Kubernetes manifests for deployment.
+
+## Architecture overview
+
+The system is organized into three main services:
 
 - **Subscription Service** (`services/subscription`)
-  - GraphQL API for customers, plans, subscriptions, and invoices
-  - JWT auth, Redis caching, Kafka event publishing
+  - GraphQL server for customer signup/login, plans, subscription lifecycle, and invoices.
+  - JWT-based auth middleware and role enforcement.
+  - Redis caching for fast plan and summary reads.
+  - Publishes subscription and invoice events to Kafka.
 - **Payment Service** (`services/payment`)
-  - gRPC payment processing service
-  - PostgreSQL persistence and retry worker
+  - gRPC payment processing API.
+  - Handles payment creation, retries, and persistence in PostgreSQL.
+  - Exposes metrics and health endpoints.
 - **Notification Service** (`services/notification`)
-  - Kafka consumer for email notifications and event-driven messaging
+  - Kafka consumer that sends notification events.
+  - Designed for email or webhook notification delivery.
 
-Supporting infrastructure is defined in `docker-compose.yml` for local development.
+### Infrastructure
 
-## Security and Secrets
+- PostgreSQL for relational storage.
+- Redis for caching.
+- Kafka for event-driven communication.
+- Docker Compose for local orchestration.
+- Kubernetes manifests in `deploy/k8s/` for production-style deployment.
+- Architecture diagram in `architecture/architecture-diagram.png`.
 
-- Secrets are loaded from environment variables at runtime.
-- Do not commit `.env` or `*.env` files to Git; they are ignored by `.gitignore`.
-- Use `.env.example` as a template for local configuration.
-- Rotate any leaked JWT secret or database password immediately.
+## Repo structure
 
-## Local setup
+- `services/subscription/`
+- `services/payment/`
+- `services/notification/`
+- `docker-compose.yml`
+- `deploy/k8s/`
+- `architecture/architecture-diagram.png`
 
-1. Copy the root example file:
+## Setup and run locally
+
+### 1. Copy environment examples
 
 ```bash
 cp .env.example .env
-```
-
-2. If you need service-specific local files, copy the example files in those service folders too:
-
-```bash
 cp services/payment/.env.example services/payment/.env
 cp services/subscription/.env.example services/subscription/.env
 ```
 
-3. Update the `.env` files with your own secure values:
+### 2. Update secrets
+
+Open the copied `.env` files and replace placeholders with secure values.
+
+Required fields:
 
 - `POSTGRES_PASSWORD`
 - `SECRET_KEY`
@@ -48,28 +74,98 @@ cp services/subscription/.env.example services/subscription/.env
 - `KAFKA_BROKERS`
 - `PAYMENT_SERVICE_ADDR`
 
-4. Start the whole stack locally:
+### 3. Run the application stack
 
 ```bash
 docker compose up --build
 ```
 
-5. Access the services:
+### 4. Visit the services
 
 - GraphQL playground: `http://localhost:8080`
 - Payment service: `http://localhost:9090`
 - Notification service: `http://localhost:8082`
 
-## Run tests
+## Sample GraphQL queries
 
-Use Go test for individual service modules:
+### Signup
+
+```graphql
+mutation Signup($input: SignupInput!) {
+  signup(input: $input) {
+    accessToken
+    refreshToken
+    customer {
+      id
+      email
+      fullName
+      role
+    }
+  }
+}
+```
+
+### Login
+
+```graphql
+mutation Login($input: LoginInput!) {
+  login(input: $input) {
+    accessToken
+    refreshToken
+  }
+}
+```
+
+### Fetch plans
+
+```graphql
+query Plans {
+  plans {
+    id
+    name
+    priceCents
+    interval
+    description
+  }
+}
+```
+
+### Create subscription
+
+```graphql
+mutation CreateSubscription($input: CreateSubscriptionInput!) {
+  createSubscription(input: $input) {
+    id
+    planId
+    customerId
+    status
+    startsAt
+    endsAt
+  }
+}
+```
+
+## Running tests
+
+Run Go tests for all services:
 
 ```bash
 go test ./services/...
 ```
 
+## Kubernetes manifests
+
+Service deployment manifests are available in `deploy/k8s/`.
+Use those manifests when moving the stack to Kubernetes.
+
+## Security and best practices
+
+- Keep actual credentials out of Git.
+- Use `.env.example` templates only.
+- Rotate JWT secrets and DB passwords if leaked.
+- Use a secret manager or Kubernetes secrets for production.
+- Enable TLS for database and gRPC connections in production.
+
 ## Notes
 
-- The project is configured for local development only.
-- For production, use a secure secret store and enable TLS for database and gRPC connections.
-- Keep actual credentials out of the repository by using env vars or Docker/Kubernetes secrets.
+This repository is intended as a developer-friendly sample billing platform. It is structured for local development, with an easy path to Docker Compose and Kubernetes deployment.
