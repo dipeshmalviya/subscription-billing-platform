@@ -16,6 +16,22 @@ type PaymentServer struct {
 	svc *service.PaymentService
 }
 
+func (s *PaymentServer) RefundPayment(ctx context.Context, req *paymentv1.RefundPaymentRequest) (*paymentv1.RefundPaymentResponse, error) {
+	paymentID, err := uuid.Parse(req.PaymentId)
+	if err != nil {
+		return nil, err
+	}
+	payment, err := s.svc.Refund(ctx, paymentID, req.Reason)
+	if err != nil {
+		return nil, err
+	}
+	return &paymentv1.RefundPaymentResponse{
+		PaymentId:  payment.ID.String(),
+		Status:     toProtoStatus(payment.Status),
+		RefundedAt: timestamppb.New(time.Now()),
+	}, nil
+}
+
 func NewPaymentServer(svc *service.PaymentService) *PaymentServer {
 	return &PaymentServer{svc: svc}
 }

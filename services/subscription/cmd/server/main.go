@@ -34,16 +34,27 @@ func main() {
 		logger.Fatal().Err(err).Msg("failed to load config")
 	}
 
-	pool, err := pgxpool.New(context.Background(), cfg.PostgresURI)
-	if err != nil {
-		logger.Fatal().Err(err).Msg("failed to connect to postgres")
-	}
-	defer pool.Close()
+	var pool *pgxpool.Pool
+	var customerRepo *repository.CustomerRepository
+	var planRepo *repository.PlanRepository
+	var subRepo *repository.SubscriptionRepository
+	var invRepo *repository.InvoiceRepository
 
-	if err := pool.Ping(context.Background()); err != nil {
-		logger.Fatal().Err(err).Msg("postgres ping failed")
+	pool, err = pgxpool.New(context.Background(), cfg.PostgresURI)
+	if err != nil {
+		logger.Warn().Err(err).Msg("failed to initialize postgres pool")
+	} else {
+		defer pool.Close()
+		if err := pool.Ping(context.Background()); err != nil {
+			logger.Warn().Err(err).Msg("postgres ping failed; continuing without repository initialization")
+		} else {
+			logger.Info().Msg("connected to postgres")
+			customerRepo = repository.NewCustomerRepository(pool)
+			planRepo = repository.NewPlanRepository(pool)
+			subRepo = repository.NewSubscriptionRepository(pool)
+			invRepo = repository.NewInvoiceRepository(pool)
+		}
 	}
-	logger.Info().Msg("connected to postgres")
 
 	redisCache := cache.NewRedisCache(cfg.RedisAddr)
 	if err := redisCache.Ping(context.Background()); err != nil {
@@ -55,14 +66,10 @@ func main() {
 
 	paymentClient, err := grpcclient.NewPaymentClient(cfg.PaymentServiceAddr)
 	if err != nil {
-		logger.Fatal().Err(err).Msg("failed to connect to payment service")
+		logger.Warn().Err(err).Msg("payment service unavailable; continuing without gRPC client")
+	} else {
+		defer paymentClient.Close()
 	}
-	defer paymentClient.Close()
-
-	customerRepo := repository.NewCustomerRepository(pool)
-	planRepo := repository.NewPlanRepository(pool)
-	subRepo := repository.NewSubscriptionRepository(pool)
-	invRepo := repository.NewInvoiceRepository(pool)
 
 	jwtManager := auth.NewJWTManager(cfg.SecretKey, cfg.SecretRefreshKey)
 	authService := service.NewAuthService(customerRepo, jwtManager)
@@ -83,8 +90,12 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	renewalWorker := worker.NewRenewalWorker(subRepo, invRepo, planRepo, paymentClient, producer, logger)
-	go renewalWorker.Run(ctx)
+	if paymentClient != nil && subRepo != nil && invRepo != nil && planRepo != nil {
+		renewalWorker := worker.NewRenewalWorker(subRepo, invRepo, planRepo, paymentClient, producer, logger)
+		go renewalWorker.Run(ctx)
+	} else {
+		logger.Warn().Msg("subscription worker disabled until repositories and payment client are available")
+	}
 
 	r := chi.NewRouter()
 	r.Use(chimiddleware.RequestID)

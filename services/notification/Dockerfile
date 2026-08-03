@@ -1,8 +1,10 @@
-FROM golang:1.22-alpine AS builder
+FROM golang:1.26-alpine AS builder
 WORKDIR /app
-COPY go.mod go.sum ./
+
+COPY services/notification/go.mod services/notification/go.sum ./
 RUN go mod download
-COPY . .
+
+COPY services/notification/. .
 RUN CGO_ENABLED=0 GOOS=linux go build -o server ./cmd/server
 
 FROM alpine:3.19

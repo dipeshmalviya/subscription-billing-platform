@@ -7,6 +7,7 @@ import (
 	"github.com/dipeshmalviya/subscription-billing-platform/payment/internal/domain"
 	"github.com/dipeshmalviya/subscription-billing-platform/payment/internal/gateway"
 	"github.com/dipeshmalviya/subscription-billing-platform/payment/internal/kafka"
+		"github.com/dipeshmalviya/subscription-billing-platform/payment/internal/observability"
 	"github.com/dipeshmalviya/subscription-billing-platform/payment/internal/repository"
 	"github.com/google/uuid"
 )
@@ -25,6 +26,26 @@ func NewPaymentService(
 	producer *kafka.Producer,
 ) *PaymentService {
 	return &PaymentService{paymentRepo: paymentRepo, attemptRepo: attemptRepo, gw: gw, producer: producer}
+}
+
+func (s *PaymentService) Refund(ctx context.Context, paymentID uuid.UUID, reason string) (*domain.Payment, error) {
+	payment, err := s.paymentRepo.GetByID(ctx, paymentID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.gw.Refund(ctx, payment.ProviderRef); err != nil {
+		return nil, err
+	}
+	if err := s.paymentRepo.UpdateResult(ctx, payment.ID, domain.PaymentRefunded, payment.ProviderRef, payment.Version); err != nil {
+		return nil, err
+	}
+	payment.Status = domain.PaymentRefunded
+
+	observability.RefundsTotal.WithLabelValues("succeeded").Inc()
+	_ = s.producer.Publish(ctx, "payment.refunded", payment.ID.String(), kafka.Event{
+		Type: "payment.refunded", Payload: payment,
+	})
+	return payment, nil
 }
 
 // ChargeCustomer is idempotent: calling it twice with the same idempotencyKey

@@ -1,8 +1,16 @@
 package graphql
 
-// This file will not be regenerated automatically.
-//
-// It serves as dependency injection for your app, add any dependencies you require
-// here.
+import (
+	"github.com/dipeshmalviya/subscription-billing-platform/subscription/internal/repository"
+	"github.com/dipeshmalviya/subscription-billing-platform/subscription/internal/service"
+)
 
-type Resolver struct{}
+type Resolver struct {
+	CustomerRepo        *repository.CustomerRepository
+	PlanRepo             *repository.PlanRepository
+	SubscriptionRepo     *repository.SubscriptionRepository
+	InvoiceRepo          *repository.InvoiceRepository
+	AuthService          *service.AuthService
+	SubscriptionService  *service.SubscriptionService
+	PlanService          *service.PlanService
+}
