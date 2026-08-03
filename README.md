@@ -32,19 +32,29 @@ Supporting infrastructure is defined in `docker-compose.yml` for local developme
 cp .env.example .env
 ```
 
-2. Update `.env` with your own secure values:
+2. If you need service-specific local files, copy the example files in those service folders too:
+
+```bash
+cp services/payment/.env.example services/payment/.env
+cp services/subscription/.env.example services/subscription/.env
+```
+
+3. Update the `.env` files with your own secure values:
 
 - `POSTGRES_PASSWORD`
 - `SECRET_KEY`
 - `SECRET_REFRESH_KEY`
+- `REDIS_ADDR`
+- `KAFKA_BROKERS`
+- `PAYMENT_SERVICE_ADDR`
 
-3. Start the whole stack locally:
+4. Start the whole stack locally:
 
 ```bash
 docker compose up --build
 ```
 
-4. Access the services:
+5. Access the services:
 
 - GraphQL playground: `http://localhost:8080`
 - Payment service: `http://localhost:9090`
