@@ -2,15 +2,15 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: malvi
-      POSTGRES_PASSWORD: 23Nov2004
-      POSTGRES_MULTIPLE_DATABASES: subscription_db,payment_db
+      POSTGRES_USER: ${POSTGRES_USER:-billing}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-billing}
+      POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_MULTIPLE_DATABASES:-subscription_db,payment_db}
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U malvi"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-billing}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -46,7 +46,7 @@ services:
     build:
       context: .
       dockerfile: services/subscription/Dockerfile
-    entrypoint: ["migrate", "-path", "/app/db/migrations", "-database", "postgres://malvi:23Nov2004@postgres:5432/subscription_db?sslmode=disable", "up"]
+    entrypoint: ["migrate", "-path", "/app/db/migrations", "-database", "postgres://${POSTGRES_USER:-billing}:${POSTGRES_PASSWORD:-billing}@postgres:5432/subscription_db?sslmode=disable", "up"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -55,7 +55,7 @@ services:
     build:
       context: .
       dockerfile: services/payment/Dockerfile
-    entrypoint: ["migrate", "-path", "/app/db/migrations", "-database", "postgres://malvi:23Nov2004@postgres:5432/payment_db?sslmode=disable", "up"]
+    entrypoint: ["migrate", "-path", "/app/db/migrations", "-database", "postgres://${POSTGRES_USER:-billing}:${POSTGRES_PASSWORD:-billing}@postgres:5432/payment_db?sslmode=disable", "up"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -68,13 +68,13 @@ services:
       - "8080:8080"
     environment:
       PORT: 8080
-      POSTGRES_URI: postgres://malvi:23Nov2004@postgres:5432/subscription_db?sslmode=disable
-      REDIS_ADDR: redis:6379
-      KAFKA_BROKERS: kafka:9092
-      SECRET_KEY: +YPqkUHs4G3DXUYKep5cVibZQvYyCtU1kBY/L29WsMQ=
-      SECRET_REFRESH_KEY: o4LojczaKQS15LINq7oDnpN7ui
-      ALLOWED_ORIGINS: http://localhost:5173
-      PAYMENT_SERVICE_ADDR: payment-service:9090
+      POSTGRES_URI: ${POSTGRES_URI:-postgres://${POSTGRES_USER:-billing}:${POSTGRES_PASSWORD:-billing}@postgres:5432/subscription_db?sslmode=disable}
+      REDIS_ADDR: ${REDIS_ADDR:-redis:6379}
+      KAFKA_BROKERS: ${KAFKA_BROKERS:-kafka:9092}
+      SECRET_KEY: ${SECRET_KEY:-change_this_secret_key}
+      SECRET_REFRESH_KEY: ${SECRET_REFRESH_KEY:-change_this_refresh_secret_key}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:5173}
+      PAYMENT_SERVICE_ADDR: ${PAYMENT_SERVICE_ADDR:-payment-service:9090}
     depends_on:
       postgres:
         condition: service_healthy
@@ -93,8 +93,8 @@ services:
     environment:
       PORT: 9090
       HTTP_PORT: 9091
-      POSTGRES_URI: postgres://malvi:23Nov2004@postgres:5432/payment_db?sslmode=disable
-      KAFKA_BROKERS: kafka:9092
+      POSTGRES_URI: ${POSTGRES_URI_PAYMENT:-postgres://${POSTGRES_USER:-billing}:${POSTGRES_PASSWORD:-billing}@postgres:5432/payment_db?sslmode=disable}
+      KAFKA_BROKERS: ${KAFKA_BROKERS:-kafka:9092}
     depends_on:
       postgres:
         condition: service_healthy
@@ -109,7 +109,7 @@ services:
       - "8082:8082"
     environment:
       PORT: 8082
-      KAFKA_BROKERS: kafka:9092
+      KAFKA_BROKERS: ${KAFKA_BROKERS:-kafka:9092}
     depends_on:
       - kafka
 
