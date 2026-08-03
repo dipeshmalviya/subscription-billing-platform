@@ -16,7 +16,7 @@ type testPaymentServer struct {
 func (s *testPaymentServer) ChargeCustomer(ctx context.Context, req *paymentv1.ChargeCustomerRequest) (*paymentv1.ChargeCustomerResponse, error) {
 	return &paymentv1.ChargeCustomerResponse{
 		PaymentId:   "payment-123",
-		Status:      paymentv1.PaymentStatus_PAYMENT_STATUS_COMPLETED,
+		Status:      paymentv1.PaymentStatus_PAYMENT_STATUS_SUCCEEDED,
 		ProviderRef: "provider-abc",
 	}, nil
 }
@@ -43,5 +43,11 @@ func TestPaymentClient_ChargeCustomer(t *testing.T) {
 	}
 	if resp.PaymentId != "payment-123" {
 		t.Fatalf("expected payment id payment-123, got %q", resp.PaymentId)
+	}
+	if resp.Status != paymentv1.PaymentStatus_PAYMENT_STATUS_SUCCEEDED {
+		t.Fatalf("expected status PAYMENT_STATUS_SUCCEEDED, got %v", resp.Status)
+	}
+	if resp.ProviderRef != "provider-abc" {
+		t.Fatalf("expected provider ref provider-abc, got %q", resp.ProviderRef)
 	}
 }
